@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Algoritmizace – zpracování textu</title>
+  <style>
+    :root {
+      --ink: #17243a;
+      --muted: #64748b;
+      --blue: #2563eb;
+      --blue-soft: #eaf2ff;
+      --teal: #0891b2;
+      --teal-soft: #e5f7fb;
+      --purple: #7c3aed;
+      --purple-soft: #f2edff;
+      --green: #16855a;
+      --green-soft: #e8f7ef;
+      --line: #dfe7f2;
+      --card: #ffffff;
+      --bg: #f5f8fc;
+      --warning: #e6a700;
+      --danger: #c2413a;
+      --shadow: 0 12px 34px rgba(29, 55, 92, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+    body {
+      margin: 0;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 85% 8%, rgba(37, 99, 235, 0.08), transparent 22rem),
+        var(--bg);
+      line-height: 1.65;
+    }
+    a { color: inherit; }
+    code, pre {
+      font-family: "Cascadia Code", Consolas, monospace;
+    }
+    code {
+      padding: 0.12em 0.38em;
+      border-radius: 6px;
+      background: #edf3fb;
+      color: #254fa3;
+      font-size: 0.92em;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 68px;
+      border-bottom: 1px solid rgba(223, 231, 242, 0.9);
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(14px);
+    }
+    .nav-inner {
+      max-width: 1180px;
+      height: 100%;
+      margin: auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .brand {
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+    .brand span { color: var(--blue); }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nav-links a {
+      padding: 9px 11px;
+      border-radius: 8px;
+      color: #4d5c70;
+      text-decoration: none;
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--blue);
+      background: var(--blue-soft);
+    }
+
+    main { max-width: 1180px; margin: auto; padding: 24px 24px 80px; }
+    section { margin-top: 34px; }
+    .hero {
+      min-height: 340px;
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      align-items: center;
+      gap: 28px;
+      margin-top: 18px;
+      padding: 44px 48px;
+      overflow: hidden;
+      border: 1px solid #dfe9f8;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #fff 20%, #edf5ff 100%);
+      box-shadow: var(--shadow);
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      color: var(--blue);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      max-width: 760px;
+      margin: 0 0 14px;
+      font-size: clamp(2.25rem, 5vw, 4.2rem);
+      line-height: 1.04;
+      letter-spacing: -0.045em;
+    }
+    .hero h1 span {
+      color: var(--blue);
+    }
+    .hero p { max-width: 680px; color: #526176; font-size: 1.08rem; }
+    .hero-visual {
+      position: relative;
+      height: 230px;
+    }
+    .flow-node {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      min-width: 128px;
+      height: 58px;
+      border: 2px solid #bcd2f6;
+      border-radius: 12px;
+      background: white;
+      color: #315c9e;
+      font-weight: 800;
+      box-shadow: 0 10px 26px rgba(37,99,235,.12);
+    }
+    .flow-node.one { top: 20px; left: 18px; border-radius: 30px; }
+    .flow-node.two { top: 88px; right: 0; }
+    .flow-node.three { bottom: 10px; left: 48px; transform: rotate(45deg); width: 72px; height: 72px; min-width: 72px; border-radius: 8px; }
+    .flow-node.three span { transform: rotate(-45deg); }
+
+    .section-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 20px;
+      margin: 0 0 18px;
+    }
+    .section-heading h2 {
+      margin: 0;
+      font-size: clamp(1.55rem, 3vw, 2.25rem);
+      letter-spacing: -0.035em;
+    }
+    .section-heading p { margin: 0; color: var(--muted); }
+
+    .phase-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+    .phase-card {
+      min-height: 150px;
+      padding: 24px;
+      border: 1px solid #dde7f6;
+      border-radius: 18px;
+      background: var(--card);
+    }
+    .phase-card:first-child { border-top: 4px solid var(--blue); }
+    .phase-card:last-child { border-top: 4px solid var(--teal); }
+    .phase-card .num {
+      display: inline-grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      margin-bottom: 12px;
+      border-radius: 50%;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 900;
+    }
+    .phase-card:last-child .num { background: var(--teal-soft); color: var(--teal); }
+    .phase-card h3 { margin: 0 0 6px; }
+    .phase-card p { margin: 0; color: #5d6b7d; }
+    .phase-arrow { color: #91a2ba; font-size: 1.8rem; font-weight: 300; }
+
+    .learning-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 0 0 20px;
+    }
+    .learning-item {
+      position: relative;
+      min-height: 118px;
+      padding: 18px 18px 18px 66px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+    }
+    .learning-item strong {
+      display: block;
+      margin-bottom: 3px;
+    }
+    .learning-item p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .learning-item span {
+      position: absolute;
+      left: 17px;
+      top: 18px;
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border-radius: 9px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 900;
+    }
+
+    .info-band {
+      margin: 18px 0;
+      padding: 18px 22px;
+      border-left: 5px solid var(--warning);
+      border-radius: 10px;
+      background: #fff9e8;
+    }
+    .info-band strong { color: #805d00; }
+    .study-quote {
+      margin: 18px 0;
+      padding: 20px 22px;
+      border: 1px solid #d9d2f4;
+      border-radius: 12px;
+      background: var(--purple-soft);
+      color: #4d3d76;
+      font-size: 1.02rem;
+      font-weight: 700;
+    }
+    .study-quote cite {
+      display: block;
+      margin-top: 7px;
+      color: #75668f;
+      font-size: 0.82rem;
+      font-style: normal;
+      font-weight: 600;
+    }
+    .source-citation {
+      margin: 28px 0 0;
+      padding: 18px 20px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+    .source-citation strong {
+      color: var(--ink);
+    }
+
+    .properties {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    details.property {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+      box-shadow: 0 5px 16px rgba(29,55,92,.04);
+    }
+    details.property summary {
+      min-height: 82px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 17px;
+      cursor: pointer;
+      list-style: none;
+      font-weight: 800;
+    }
+    details.property summary::-webkit-details-marker { display: none; }
+    details.property summary::after {
+      content: "+";
+      margin-left: auto;
+      color: var(--blue);
+      font-size: 1.35rem;
+    }
+    details.property[open] summary::after { content: "−"; }
+    details.property[open] { border-color: #b7cff7; }
+    .property-icon {
+      display: grid;
+      flex: 0 0 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 10px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-size: 1.15rem;
+    }
+    .property-body {
+      margin: 0 17px 17px;
+      padding-top: 12px;
+      border-top: 1px solid #edf1f7;
+      color: #59687b;
+      font-size: 0.94rem;
+    }
+    .property-body p { margin: 0 0 8px; }
+
+    .table-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .filter-btn, .action-btn {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: white;
+      color: #536176;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+    .filter-btn.active {
+      border-color: var(--purple);
+      background: var(--purple);
+      color: white;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: white;
+      box-shadow: var(--shadow);
+    }
+    table {
+      width: 100%;
+      min-width: 820px;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 16px;
+      border-right: 1px solid #edf1f7;
+      border-bottom: 1px solid #edf1f7;
+      vertical-align: top;
+      text-align: left;
+    }
+    th:last-child, td:last-child { border-right: 0; }
+    tr:last-child td { border-bottom: 0; }
+    th {
+      background: #f8fafc;
+      color: #344258;
+      font-size: 0.88rem;
+    }
+    tbody th { background: #fff; color: var(--muted); }
+    td.highlight {
+      background: var(--purple-soft);
+      box-shadow: inset 0 3px 0 var(--purple);
+    }
+    .table-note {
+      margin-top: 14px;
+      padding: 16px 18px;
+      border-radius: 12px;
+      background: var(--green-soft);
+      color: #30654e;
+    }
+    .format-tip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .format-tip article {
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+    .format-tip h3 {
+      margin: 0 0 5px;
+      font-size: 0.95rem;
+    }
+    .format-tip p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .diagram-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .diagram-card {
+      min-height: 260px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: white;
+      box-shadow: 0 7px 20px rgba(29,55,92,.05);
+    }
+    .shape-stage {
+      height: 118px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f8fbff, #eef5ff);
+    }
+    .shape {
+      display: grid;
+      width: 130px;
+      height: 58px;
+      place-items: center;
+      color: #274875;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-align: center;
+    }
+    .shape.oval { border: 2px solid #3774c7; border-radius: 50%; }
+    .shape.parallelogram { width: 142px; transform: skew(-12deg); border: 2px solid #3774c7; background: #fff; }
+    .shape.parallelogram span { transform: skew(12deg); }
+    .shape.rectangle { border: 2px solid #3774c7; background: #fff; }
+    .shape.diamond { width: 76px; height: 76px; transform: rotate(45deg); border: 2px solid #3774c7; background: #fff; }
+    .shape.diamond span { transform: rotate(-45deg); }
+    .shape.hexagon {
+      width: 145px;
+      clip-path: polygon(18% 0, 82% 0, 100% 50%, 82% 100%, 18% 100%, 0 50%);
+      background: #3774c7;
+      color: white;
+    }
+    .shape.hexagon span { background: #3774c7; }
+    .shape.circle { width: 68px; height: 68px; border: 2px solid #3774c7; border-radius: 50%; background: #fff; }
+    .shape.subroutine { width: 120px; border: 2px solid #3774c7; background: linear-gradient(90deg, #fff 10%, #3774c7 10%, #3774c7 12%, #fff 12%, #fff 88%, #3774c7 88%, #3774c7 90%, #fff 90%); }
+    .diagram-card h3 { margin: 0 0 5px; font-size: 1rem; }
+    .diagram-card p { margin: 0; color: #64748b; font-size: 0.88rem; }
+    .diagram-card .io { margin-top: 8px; color: var(--blue); font-size: 0.78rem; font-weight: 800; }
+    .direction-note {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: var(--teal-soft);
+      color: #276f7c;
+      font-weight: 800;
+    }
+    .diagram-guide {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 14px 0 18px;
+    }
+    .diagram-guide article {
+      padding: 15px 17px;
+      border-radius: 12px;
+      background: white;
+      border: 1px solid var(--line);
+      color: #5d6b7d;
+      font-size: 0.9rem;
+    }
+    .diagram-guide strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink);
+    }
+
+    .quiz {
+      padding: 26px;
+      border: 1px solid #ddd7f5;
+      border-radius: 20px;
+      background: white;
+      box-shadow: var(--shadow);
+    }
+    .quiz-part { margin-bottom: 20px; }
+    .quiz-part h3 {
+      display: inline-flex;
+      margin: 0 0 12px;
+      padding: 7px 12px;
+      border-radius: 8px;
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+    .question {
+      margin: 12px 0;
+      padding: 18px;
+      border: 1px solid #e7ecf4;
+      border-radius: 14px;
+    }
+    .question.correct { border-color: #80c8a8; background: #f7fffb; }
+    .question.incorrect { border-color: #dda89f; background: #fff8f7; }
+    .question h4 { margin: 0 0 10px; }
+    .choices { display: grid; gap: 7px; }
+    .choice {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 11px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .choice:hover { background: #f5f8fc; }
+    .choice input { accent-color: var(--purple); }
+    .explanation {
+      display: none;
+      margin: 12px 0 0;
+      padding: 10px 12px;
+      border-left: 3px solid var(--purple);
+      background: var(--purple-soft);
+      color: #4f3e74;
+      font-size: 0.9rem;
+    }
+    .question.checked .explanation { display: block; }
+    textarea {
+      width: 100%;
+      min-height: 92px;
+      resize: vertical;
+      padding: 11px 12px;
+      border: 1px solid #ccd6e4;
+      border-radius: 9px;
+      color: var(--ink);
+      font: inherit;
+    }
+    textarea:focus { outline: 3px solid rgba(124,58,237,.12); border-color: var(--purple); }
+    .key {
+      display: none;
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 9px;
+      background: var(--green-soft);
+      color: #36644f;
+      font-size: 0.92rem;
+    }
+    .key.visible { display: block; }
+    .key-btn {
+      margin-top: 9px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--green-soft);
+      color: var(--green);
+      padding: 8px 11px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+    .quiz-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 9px;
+      padding-top: 10px;
+      border-top: 1px solid #edf1f7;
+    }
+    .primary-btn, .secondary-btn {
+      border: 0;
+      border-radius: 9px;
+      padding: 11px 16px;
+      cursor: pointer;
+      font-weight: 900;
+    }
+    .primary-btn { background: var(--purple); color: white; }
+    .secondary-btn { background: #edf2f7; color: #4c5a6d; }
+    .score {
+      min-width: 170px;
+      margin-left: auto;
+      padding: 10px 14px;
+      border-radius: 9px;
+      background: var(--blue-soft);
+      color: #315b9d;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .nav-links a { font-size: 0.82rem; padding: 8px 7px; }
+      .hero { grid-template-columns: 1fr 230px; padding: 36px; }
+      .properties { grid-template-columns: repeat(2, 1fr); }
+      .diagram-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 720px) {
+      .nav { height: auto; }
+      .nav-inner { align-items: flex-start; padding-top: 12px; padding-bottom: 8px; }
+      .brand { display: none; }
+      .nav-links { width: 100%; overflow-x: auto; justify-content: flex-start; }
+      .nav-links a { white-space: nowrap; }
+      main { padding: 12px 14px 50px; }
+      .hero { grid-template-columns: 1fr; min-height: 0; padding: 28px 22px; }
+      .hero-visual { display: none; }
+      .phase-grid { grid-template-columns: 1fr; }
+      .phase-arrow { text-align: center; transform: rotate(90deg); }
+      .properties, .diagram-grid, .learning-strip, .format-tip, .diagram-guide { grid-template-columns: 1fr; }
+      .section-heading { align-items: flex-start; flex-direction: column; }
+      .quiz { padding: 14px; }
+      .score { width: 100%; margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" aria-label="Hlavní navigace">
+    <div class="nav-inner">
+      <div class="brand">Algo<span>Lab</span></div>
+      <div class="nav-links">
+        <a class="active" href="#uvod">Úvod a vlastnosti</a>
+        <a href="#zapis">Zápis algoritmů</a>
+        <a href="#diagramy">Vývojové diagramy</a>
+        <a href="#test">Interaktivní test</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div>
+        <div class="eyebrow">Studijní průvodce · Informatika</div>
+        <h1>Algoritmizace – <span>zpracování textu</span></h1>
+        <p>Naučte se přemýšlet o postupu řešení, psát jednoznačný algoritmus a ověřit ho pomocí vývojového diagramu i kvízu.</p>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="flow-node one">Vstup</div>
+        <div class="flow-node two">Zpracování</div>
+        <div class="flow-node three"><span>?</span></div>
+      </div>
+    </header>
+
+    <section id="uvod">
+      <div class="section-heading">
+        <h2>1. Co je algoritmus a proč ho vytváříme</h2>
+      </div>
+      <div class="phase-grid">
+        <article class="phase-card">
+          <span class="num">1</span>
+          <h3>Algoritmus</h3>
+          <p>Nejprve navrhneme přesný postup řešení. Počítač vlastní inteligenci nemá; dělá pouze to, co mu výslovně přikážeme.</p>
+        </article>
+        <div class="phase-arrow" aria-hidden="true">→</div>
+        <article class="phase-card">
+          <span class="num">2</span>
+          <h3>Kód v programovacím jazyce</h3>
+          <p>Správně sestavený algoritmus následně převádíme do syntaxe konkrétního programovacího jazyka.</p>
+        </article>
+      </div>
+      <blockquote class="info-band"><strong>Algoritmus</strong> je konečný, jednoznačný postup, který z možných vstupních dat vede k požadovanému výsledku.</blockquote>
+      <blockquote class="study-quote">
+        „Počítač nedělá to, co si myslíme — dělá přesně to, co mu přikážeme.“
+        <cite>— základní poučka algoritmizace</cite>
+      </blockquote>
+      <div class="learning-strip" aria-label="Základní části algoritmu">
+        <article class="learning-item">
+          <span>1</span>
+          <strong>Vstup</strong>
+          <p>Určete data, která algoritmus přijímá: čísla, text, soubor nebo stav uživatelského výběru.</p>
+        </article>
+        <article class="learning-item">
+          <span>2</span>
+          <strong>Zpracování</strong>
+          <p>Popište kontrolu dat, výpočty, rozhodnutí a opakování, která převádějí vstup na výsledek.</p>
+        </article>
+        <article class="learning-item">
+          <span>3</span>
+          <strong>Výstup</strong>
+          <p>Definujte, co a v jakém tvaru zobrazíte nebo uložíte: zprávu, hodnotu, seznam nebo soubor.</p>
+        </article>
+      </div>
+
+      <div class="section-heading">
+        <h2>Šest vlastností správného algoritmu</h2>
+        <p>Klikněte na kartu pro detail</p>
+      </div>
+      <div class="properties">
+        <details class="property">
+          <summary><span class="property-icon">01</span>Konečnost</summary>
+          <div class="property-body"><p>Algoritmus musí mít jasný začátek i konec. Každá proveditelná větev musí po konečném počtu kroků dospět k konci nebo výstupu.</p><p>Každou smyčku proto omezte počtem opakování nebo podmínkou ukončení. Rizikem zacyklení, „zatuhnutí“ a přetečení paměti je nemožnost dokončit výpočet.</p></div>
+        </details>
+        <details class="property">
+          <summary><span class="property-icon">02</span>Věcná správnost</summary>
+          <div class="property-body"><p>Používáme správné vzorce a postupy. Zlomky zapisujeme lomítkem a závorkami: <code>X := (A+B) / (C+D)</code>. Bez závorek se podle pořadí operací může postupat jinak.</p><p>Funkce a odmocniny mají argument v závorkách: <code>Y := SQRT(X)</code>. Výslednou hodnotu vždy porovnejte s příkladem a hraničními případy.</p></div>
+        </details>
+        <details class="property">
+          <summary><span class="property-icon">03</span>Jednoznačnost</summary>
+          <div class="property-body"><p>Je vždy jasné, který krok následuje. Musí být pokryty všechny možné větve rozhodování i podmínky řešitelnosti.</p><p>Před dělením ošetřete nulu; před odmocninou v oboru reálných čísel zkontrolujte záporný výraz. Pokud podmínka platí i neplatí, měly by obě větve vést k určitému kroku nebo výstupu.</p></div>
+        </details>
+        <details class="property">
+          <summary><span class="property-icon">04</span>Obecnost</summary>
+          <div class="property-body"><p>Algoritmus řeší celou skupinu úloh, ne jeden konkrétní případ. Zapište <code>A + B</code> místo nevhodného <code>1 + 1</code>.</p><p>Vstupní proměnné ponechejte proměnlivé a algoritmus omezte pouze reálnými podmínkami úlohy. Například test prázdného textu funguje obecně pro libovolnou délku vstupu.</p></div>
+        </details>
+        <details class="property">
+          <summary><span class="property-icon">05</span>Opakovatelnost</summary>
+          <div class="property-body"><p>Při stejných vstupních datech a podmínkách se získá stejný výsledek (determinismus). To umožňuje výsledek ověřit opakovaným spuštěním.</p><p>Proměnnou před jejím použitím inicializujte. Nespoléhejte se na náhodnou nebo předchozí hodnotu paměti a při získávání vstupu ověřte správný datový typ.</p></div>
+        </details>
+        <details class="property">
+          <summary><span class="property-icon">06</span>Srozumitelnost</summary>
+          <div class="property-body"><p>Zápis má být čitelný pro autora i ostatní. Používejte smysluplná jména, proměnné popisujte a doplňujte užitečné komentáře.</p><p>Jednoduchý zápis se délkou proměnné přímo čte: <code>pocetZnaku</code>, <code>hledanyText</code>. Komentáře vysvětlujte důvod, nikoli zřejmý příkaz.</p></div>
+        </details>
+      </div>
+    </section>
+
+    <section id="zapis">
+      <div class="section-heading">
+        <h2>2. Možnosti zápisu algoritmů</h2>
+        <p>Zvýrazněte sloupec podle formy zápisu</p>
+      </div>
+      <div class="table-tools" aria-label="Filtr forem zápisu">
+        <button class="filter-btn active" data-column="all">Vše</button>
+        <button class="filter-btn" data-column="1">Slovní</button>
+        <button class="filter-btn" data-column="2">Matematika</button>
+        <button class="filter-btn" data-column="3">Tabulky</button>
+        <button class="filter-btn" data-column="4">Diagram</button>
+        <button class="filter-btn" data-column="5">Program</button>
+      </div>
+      <div class="table-wrap">
+        <table id="formatsTable">
+          <thead>
+            <tr>
+              <th>Hledisko</th>
+              <th>Slovní vyjádření</th>
+              <th>Matematický zápis</th>
+              <th>Rozhodovací tabulky</th>
+              <th>Vývojové diagramy</th>
+              <th>Počítačový program</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>Použití a charakteristika</th>
+              <td>Postup popsaný běžným jazykem, vhodný pro rychlé vysvětlení.</td>
+              <td>Vzorce, proměnné a logické vztahy; např. <code>X := (A+B)/(C+D)</code>.</td>
+              <td>Přehledná kombinace podmínek, akcí a pravidel rozhodování.</td>
+              <td>Grafická posloupnost kroků, vstupů, výstupů, větvení a smyček.</td>
+              <td>Přesný zápis ve zdrojovém kódu; překladač ho převádí do strojového kódu.</td>
+            </tr>
+            <tr>
+              <th>Výhody</th>
+              <td>Srozumitelné pro široké publikum; nezávislé na programovacím jazyce.</td>
+              <td>Přesné, stručné a vhodné pro numerické výpočty.</td>
+              <td>Dobře odhaluje chybějící kombinace podmínek.</td>
+              <td>Vizuálně ukáže tok programu i větvení.</td>
+              <td>Přímo spustitelné po překladu; jednoznačné pro počítač.</td>
+            </tr>
+            <tr>
+              <th>Nevýhody</th>
+              <td>Může být nejednoznačné nebo příliš rozvláčné.</td>
+              <td>Méně vhodné pro složité uživatelské a vstupně-výstupní části.</td>
+              <td>Při mnoha podmínkách rychle přestává být přehledná.</td>
+              <td>Velké diagramy jsou nepřehledné a obtížně se upravují.</td>
+              <td>Je zcela svázaná se syntaxí jazyka a překladačem.</td>
+            </tr>
+            <tr>
+              <th>Kdy ji volíme</th>
+              <td>V úvodu úlohy, při zadání a při komunikaci s lidmi.</td>
+              <td>Při výpočtech, vzorcích a definici přesných vztahů.</td>
+              <td>U kombinací vstupních podmínek a akcí.</td>
+              <td>Při návrhu toku programu a vysvětlování větvení.</td>
+              <td>Při finální realizaci programu pro spuštění na počítači.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-note"><strong>Doplňující metody návrhu:</strong> Strukturální analýza rozděluje systém na procesy, datové toky a datové struktury. Objektová analýza modeluje skutečný svět pomocí objektů a tříd; její principy jsou základem objektového programování i návrhu databází.</div>
+      <div class="format-tip">
+        <article>
+          <h3>Začátek zpracování textu</h3>
+          <p>Nejprve načtěte vstup a ověřte jeho typ, prázdnost nebo meze délky.</p>
+        </article>
+        <article>
+          <h3>Převod a transformace</h3>
+          <p>Text můžete hledat, porovnávat, rozdělovat, slučovat, upravovat nebo počítat jeho části.</p>
+        </article>
+        <article>
+          <h3>Výstup a ošetření</h3>
+          <p>Výsledek zobrazte srozumitelně a ošetřete případ, že nebyl nalezen nebo data nevyhovují.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="diagramy">
+      <div class="section-heading">
+        <h2>3. Základní značky vývojových diagramů</h2>
+      </div>
+      <div class="direction-note">↘ Standardní směr kreslení: odshora dolů a zleva doprava</div>
+      <div class="diagram-guide">
+        <article>
+          <strong>Jak diagram číst</strong>
+          Začněte v mezní značce „Začátek“. Sledujte šipky, zpracujte vstupní a rozhodovací bloky a skončete značkou „Konec“.
+        </article>
+        <article>
+          <strong>Jak ověřit diagram</strong>
+          Vyzkoušejte běžný vstup, hraniční hodnotu i chybný vstup. Každá větev musí mít cestu k výstupu a nesmí vést do neukončeného cyklu.
+        </article>
+      </div>
+      <div class="diagram-grid">
+        <article class="diagram-card">
+          <div class="shape-stage"><div class="shape oval">Start / Konec</div></div>
+          <h3>Mezní značka</h3>
+          <p>Označuje začátek nebo konec algoritmu.</p>
+          <div class="io">1 šipka dolů nebo 1 shora</div>
+        </article>
+        <article class="diagram-card">
+          <div class="shape-stage"><div class="shape parallelogram"><span>Čti / Zobraz</span></div></div>
+          <h3>Vstup / Výstup</h3>
+          <p><code>Čti: ...</code> nebo <code>Zobraz: ...</code></p>
+          <div class="io">1 vstup · 1 výstup</div>
+        </article>
+        <article class="diagram-card">
+          <div class="shape-stage"><div class="shape rectangle">A := A + B</div></div>
+          <h3>Zpracování</h3>
+          <p>Výpočty a transformace dat; bez větvení uvnitř.</p>
+          <div class="io">1 vstup · 1 výstup</div>
+        </article>
+        <article class="diagram-card">
+          <div class="shape-stage"><div class="shape diamond"><span>Podmínka?</span></div></div>
+          <h3>Rozhodovací blok</h3>
+          <p>Větví podle pravdivosti podmínky.</p>
+          <div class="io">1 horní vstup · 2 výstupy +/ano a −/ne</div>
+        </article>
+        <article class="diagram-card">
+          <div class="shape-stage"><div class="shape hexagon"><span>K = 1 až N</span></div></div>
+          <h3>Příprava</h3>
+          <p>Inicializace cyklu se známým počtem opakování.</p>
+          <div class="io">1 vstup · 1 výstup</div>
+        </article>
+        <article class="diagram-card">
+          <div class="shape-stage"><div class="shape circle">1</div></div>
+          <h3>Spojka</h3>
+          <p>Propojuje přerušené části jednoho diagramu.</p>
+          <div class="io">Spárujte stejné číslo</div>
+        </article>
+        <article class="diagram-card">
+          <div class="shape-stage"><div class="shape subroutine">Podprogram</div></div>
+          <h3>Podprogram</h3>
+          <p>Samostatná opakovaně použitelná část programu.</p>
+          <div class="io">Obdélník se svislými čarami</div>
+        </article>
+      </div>
+    </section>
+
+    <section id="test">
+      <div class="section-heading">
+        <h2>4. Interaktivní test</h2>
+        <p>Část A i část B můžete řešit samostatně</p>
+      </div>
+      <div class="quiz" id="quiz">
+        <div class="quiz-part">
+          <h3>Část A · Otázky 1–5</h3>
+
+          <article class="question" data-answer="b">
+            <h4>1. Co by měl obsahovat algoritmus jako první fázi tvorby programu?</h4>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="q1" value="a"> Konkrétní kód ve zvoleném jazyce</label>
+              <label class="choice"><input type="radio" name="q1" value="b"> Přesný postup řešení úlohy</label>
+              <label class="choice"><input type="radio" name="q1" value="c"> Pouze výslednou tabulku dat</label>
+            </div>
+            <div class="explanation">Správně: nejprve navrhujeme postup, teprve poté převádíme algoritmus do konkrétního programovacího jazyka.</div>
+          </article>
+
+          <article class="question" data-answer="c">
+            <h4>2. Jakou vlastnost porušuje nekonečně se opakující smyčka bez ukončení?</h4>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="q2" value="a"> Srozumitelnost</label>
+              <label class="choice"><input type="radio" name="q2" value="b"> Obecnost</label>
+              <label class="choice"><input type="radio" name="q2" value="c"> Konečnost</label>
+            </div>
+            <div class="explanation">Správně: algoritmus musí mít jasný začátek i konec a smyčka musí být omezená nebo podmíněně ukončitelná.</div>
+          </article>
+
+          <article class="question" data-answer="a">
+            <h4>3. Který zápis zlomu je jednoznačný a věcně správný?</h4>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="q3" value="a"><code>X := (A+B) / (C+D)</code></label>
+              <label class="choice"><input type="radio" name="q3" value="b"><code>X := A+B/C+D</code></label>
+              <label class="choice"><input type="radio" name="q3" value="c"><code>X := 1/1</code></label>
+            </div>
+            <div class="explanation">Správně: závorkami vymezujeme čitatele i jmenovatele a lomítko jednoznačně označuje dělení.</div>
+          </article>
+
+          <article class="question" data-answer="b">
+            <h4>4. Co znamená opakovatelnost (determinismus) algoritmu?</h4>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="q4" value="a"> Algoritmus může být prohozený s jiným programem</label>
+              <label class="choice"><input type="radio" name="q4" value="b"> Stejné vstupy dávají za stejných podmínek stejný výsledek</label>
+              <label class="choice"><input type="radio" name="q4" value="c"> Algoritmus se musí spustit právě jednou</label>
+            </div>
+            <div class="explanation">Správně: výsledek nesmí záviset na neinicializovaných proměnných ani náhodných skrytých hodnotách.</div>
+          </article>
+
+          <article class="question" data-answer="c">
+            <h4>5. Který vývojový blok slouží k větvení podle podmínky?</h4>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="q5" value="a"> Obdélník</label>
+              <label class="choice"><input type="radio" name="q5" value="b"> Kosodélník</label>
+              <label class="choice"><input type="radio" name="q5" value="c"> Kosočtverec</label>
+            </div>
+            <div class="explanation">Správně: kosočtverec obsahuje rozhodovací podmínku a obvykle má výstupy ano/+ a ne/−.</div>
+          </article>
+        </div>
+
+        <div class="quiz-part">
+          <h3>Část B · Otázky 6–9</h3>
+
+          <article class="question">
+            <h4>6. Uveďte dvě podmínky řešitelnosti, které je nutné ošetřit před výpočtem.</h4>
+            <textarea placeholder="Např. dělení..."></textarea>
+            <button class="key-btn" type="button">Zobrazit vzorovou odpověď</button>
+            <div class="key"><strong>Klíč:</strong> Ověřit, že jmenovatel není nulový před dělením, a že výraz pod odmocninou není záporný při práci v oboru reálných čísel.</div>
+          </article>
+
+          <article class="question">
+            <h4>7. Čím se liší obecnost od řešení jednoho konkrétního příkladu?</h4>
+            <textarea placeholder="Své vysvětlení napište sem..."></textarea>
+            <button class="key-btn" type="button">Zobrazit vzorovou odpověď</button>
+            <div class="key"><strong>Klíč:</strong> Obecný algoritmus pracuje s proměnnými a řeší širokou skupinu vstupů, například <code>A + B</code>, nikoli pouze pevný příklad <code>1 + 1</code>.</div>
+          </article>
+
+          <article class="question">
+            <h4>8. Jaké vstupy a výstupy má rozhodovací blok a jak se kreslí vývojový diagram?</h4>
+            <textarea placeholder="Popište blok i směr kreslení..."></textarea>
+            <button class="key-btn" type="button">Zobrazit vzorovou odpověď</button>
+            <div class="key"><strong>Klíč:</strong> Rozhodovací blok má jeden horní vstup a dva výstupy označené ano/+ a ne/−. Diagram se standardně kreslí odshora dolů a zleva doprava.</div>
+          </article>
+
+          <article class="question">
+            <h4>9. Vysvětlete rozdíl mezi strukturální a objektovou analýzou.</h4>
+            <textarea placeholder="Napište stručně rozdíl..."></textarea>
+            <button class="key-btn" type="button">Zobrazit vzorovou odpověď</button>
+            <div class="key"><strong>Klíč:</strong> Strukturální analýza rozkládá systém na procesy, datové toky a struktury dat. Objektová analýza modeluje systém pomocí objektů a tříd a tvoří základ objektového programování i návrhu databází.</div>
+          </article>
+        </div>
+
+        <div class="quiz-actions">
+          <button class="primary-btn" id="checkQuiz" type="button">Vyhodnotit část A</button>
+          <button class="secondary-btn" id="showKeys" type="button">Zobrazit všechny klíče</button>
+          <button class="secondary-btn" id="resetQuiz" type="button">Resetovat test</button>
+          <div class="score" id="score">Skóre: 0/5</div>
+        </div>
+      </div>
+    </section>
+    <footer class="source-citation">
+      <strong>Citace zdroje:</strong>
+      Dodaný studijní materiál k tématu „Algoritmizace – zpracování textu“, použitý jako podklad pro obsah této vzdělávací stránky.
+    </footer>
+  </main>
+
+  <script>
+    const formatButtons = document.querySelectorAll(".filter-btn");
+    const table = document.getElementById("formatsTable");
+    formatButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        formatButtons.forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        const column = button.dataset.column;
+        table.querySelectorAll("tr").forEach((row) => {
+          row.querySelectorAll("th, td").forEach((cell, index) => {
+            cell.classList.toggle("highlight", column !== "all" && index === Number(column));
+          });
+        });
+      });
+    });
+
+    const navLinks = document.querySelectorAll(".nav-links a");
+    const sections = [...document.querySelectorAll("main section")];
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          navLinks.forEach((link) => {
+            link.classList.toggle("active", link.getAttribute("href") === "#" + entry.target.id);
+          });
+        }
+      });
+    }, { rootMargin: "-35% 0px -55%", threshold: 0 });
+    sections.forEach((section) => sectionObserver.observe(section));
+
+    const choiceQuestions = [...document.querySelectorAll(".question[data-answer]")];
+    const score = document.getElementById("score");
+
+    document.getElementById("checkQuiz").addEventListener("click", () => {
+      let correctCount = 0;
+      choiceQuestions.forEach((question) => {
+        const selected = question.querySelector("input:checked");
+        question.classList.add("checked");
+        question.classList.remove("correct", "incorrect");
+        if (selected) {
+          if (selected.value === question.dataset.answer) {
+            question.classList.add("correct");
+            correctCount++;
+          } else {
+            question.classList.add("incorrect");
+          }
+        } else {
+          question.classList.add("incorrect");
+        }
+      });
+      score.textContent = `Skóre: ${correctCount}/5`;
+    });
+
+    document.querySelectorAll(".key-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        const key = button.nextElementSibling;
+        const visible = key.classList.toggle("visible");
+        button.textContent = visible ? "Skrýt vzorovou odpověď" : "Zobrazit vzorovou odpověď";
+      });
+    });
+
+    document.getElementById("showKeys").addEventListener("click", (event) => {
+      const keys = [...document.querySelectorAll(".key")];
+      const show = keys.some((key) => !key.classList.contains("visible"));
+      keys.forEach((key) => key.classList.toggle("visible", show));
+      document.querySelectorAll(".key-btn").forEach((button) => {
+        button.textContent = show ? "Skrýt vzorovou odpověď" : "Zobrazit vzorovou odpověď";
+      });
+      event.currentTarget.textContent = show ? "Skrýt všechny klíče" : "Zobrazit všechny klíče";
+    });
+
+    document.getElementById("resetQuiz").addEventListener("click", () => {
+      document.querySelectorAll("#quiz input[type='radio']").forEach((input) => { input.checked = false; });
+      document.querySelectorAll("#quiz textarea").forEach((textarea) => { textarea.value = ""; });
+      choiceQuestions.forEach((question) => question.classList.remove("checked", "correct", "incorrect"));
+      document.querySelectorAll(".key").forEach((key) => key.classList.remove("visible"));
+      document.querySelectorAll(".key-btn").forEach((button) => { button.textContent = "Zobrazit vzorovou odpověď"; });
+      document.getElementById("showKeys").textContent = "Zobrazit všechny klíče";
+      score.textContent = "Skóre: 0/5";
+    });
+  </script>
+</body>
+</html>
